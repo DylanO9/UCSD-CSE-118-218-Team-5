@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medication Tracker</title>
+    <script>
+        const lambdaFunctionUrl = "https://jkc2kkozgx35dgfyesiu27hbsq0gxlfq.lambda-url.us-east-2.on.aws/";  // Replace with your Lambda Function URL
+
+        async function fetchMedicationStatus(medicationId) {
+            try {
+                const response = await fetch(lambdaFunctionUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ medicationId })
+                });
+                const data = await response.json();
+                console.log("API response:", data);
+
+                document.getElementById("medicationStatus").innerText = data.message;
+
+                if (data.isDue) {
+                    document.getElementById("takeButton").style.display = "block";
+                    document.getElementById("takeButton").onclick = () => takeMedication(medicationId);
+                } else {
+                    document.getElementById("takeButton").style.display = "none";
+                    document.getElementById("nextDue").innerText = `Next due time: ${data.nextDue}`;
+                }
+            } catch (error) {
+                console.error("Error calling API:", error);
+            }
+        }
+
+        async function takeMedication(medicationId) {
+            try {
+                const response = await fetch(lambdaFunctionUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ medicationId, action: "takeMedication" })
+                });
+                const data = await response.json();
+                document.getElementById("medicationStatus").innerText = data.message;
+                document.getElementById("takeButton").style.display = "none";
+                document.getElementById("nextDue").innerText = `Next due time: ${data.nextDue}`;
+            } catch (error) {
+                console.error("Error updating medication status:", error);
+            }
+        }
+
+        function getMedicationIdFromPath() {
+            const path = window.location.pathname;
+            return path.replace("/", "");
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const medicationId = getMedicationIdFromPath();
+            if (medicationId) {
+                fetchMedicationStatus(medicationId);
+            } else {
+                document.getElementById("medicationStatus").innerText = "No medication ID provided in the URL.";
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>Medication Tracker</h1>
+    <p id="medicationStatus">Loading medication status...</p>
+    <p id="nextDue"></p>
+    <button id="takeButton" style="display:none;">Take Medication</button>
+</body>
+</html>
