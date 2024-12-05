@@ -9,9 +9,26 @@
             text-align: center;
             border-bottom: 1px solid black;
         }
+
+        h2 {
+            font-size: 1.25em;
+        }
+        
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            border: 1px solid black;
+            margin: .25rem 0;
+            width: fit-content;
+            padding: 0 1rem;
+        }
     </style>
     <script>
-        const lambdaFunctionUrl = "https://jkc2kkozgx35dgfyesiu27hbsq0gxlfq.lambda-url.us-east-2.on.aws/";  // Replace with your Lambda Function URL
+        // const lambdaFunctionUrl = "https://nxkcxwa2mh45ndwnia7ayplcbq0ktppz.lambda-url.us-west-1.on.aws/";  // Replace with your Lambda Function URL
+        const lambdaFunctionUrl = "https://c6iun2aka523wkhnqwd36spq7m0abgqq.lambda-url.us-west-1.on.aws/";  // Replace with your Lambda Function URL
 
         async function fetchMedicationStatus(medicationId) {
             try {
@@ -23,14 +40,18 @@
                 const data = await response.json();
                 console.log("API response:", data);
 
+
+
                 document.getElementById("medicationStatus").innerText = data.message;
 
                 if (data.isDue) {
                     document.getElementById("takeButton").style.display = "block";
                     document.getElementById("takeButton").onclick = () => takeMedication(medicationId);
+                    document.getElementById("viewButton").onclick = () => viewTimesTaken(medicationId, data);
                 } else {
                     document.getElementById("takeButton").style.display = "none";
                     document.getElementById("nextDue").innerText = `Next due time: ${data.nextDue}`;
+                    document.getElementById("viewButton").style.display = "none";
                 }
             } catch (error) {
                 console.error("Error calling API:", error);
@@ -53,6 +74,19 @@
             }
         }
 
+        function viewTimesTaken(medicationId, data) {
+            document.getElementById("viewTimes").style.display = "block";
+            const timesTakenList = data.timesTaken;
+            const timesTakenElement = document.getElementById("timesTaken");
+            timesTakenElement.innerHTML = "";
+
+            timesTakenList.forEach(time => {
+                const li = document.createElement("li");
+                li.innerText = time;
+                timesTakenElement.appendChild(li);
+            });
+        }
+
         function getMedicationIdFromPath() {
             const path = window.location.pathname;
             return path.replace("/", "");
@@ -73,5 +107,11 @@
     <p id="medicationStatus">Loading medication status...</p>
     <p id="nextDue"></p>
     <button id="takeButton" style="display:none;">Take Medication</button>
+    <button id="viewButton">View Times Taken</button>
+    <section id="viewTimes" style="display:none;">
+        <h2>Times Taken</h2>
+        <ul id="timesTaken">
+        </ul>
+    </section>
 </body>
 </html>

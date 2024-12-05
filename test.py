@@ -40,7 +40,6 @@ def lambda_handler(event, context):
         # Process the medication data
         medication_data = response['Item']
         last_taken = medication_data.get('lastTaken')
-        times_taken = medication_data.get('timesTaken', [])  # Fetch existing times_taken list
         timeframe = int(medication_data.get('timeframe', 24))
         now = datetime.utcnow()
 
@@ -56,31 +55,24 @@ def lambda_handler(event, context):
             "isFound": True,
             "medicationId": medication_id,
             "isDue": is_due,
-            "nextDue": next_due_time.isoformat(),
-            "timesTaken": times_taken  # Return times_taken in response
+            "nextDue": next_due_time.isoformat()
         }
 
         # Check if action is "takeMedication" to log as taken
         if body.get('action') == 'takeMedication' and is_due:
             new_last_taken = now.isoformat()
             new_next_due = (now + timedelta(hours=timeframe)).isoformat()
-            times_taken.append(now.isoformat)  # Log the new time taken
-
-            # Update the DynamoDB entry with the new times_taken
             table.update_item(
                 Key={'medicationId': medication_id},
-                UpdateExpression="SET lastTaken = :lastTaken, nextDue = :nextDue, timesTaken = :timesTaken",
+                UpdateExpression="SET lastTaken = :lastTaken, nextDue = :nextDue",
                 ExpressionAttributeValues={
                     ':lastTaken': new_last_taken,
-                    ':nextDue': new_next_due,
-                    ':timesTaken': times_taken  # Update times_taken
+                    ':nextDue': new_next_due
                 }
             )
-
             response_body["message"] = f"Medication {medication_id} has been logged as taken."
             response_body["lastTaken"] = new_last_taken
             response_body["nextDue"] = new_next_due
-            response_body["timesTaken"] = times_taken  # Return updated times_taken
         else:
             response_body["message"] = (
                 f"Medication {medication_id} is due." if is_due else 
